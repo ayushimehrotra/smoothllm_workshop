@@ -1,3 +1,7 @@
 [submodule "llm-attacks"]
 	path = llm-attacks
 	url = https://github.com/llm-attacks/llm-attacks
+
+[submodule "smoothllm"]
+	path = smoothllm
+	url = https://github.com/arobey1/smooth-llm
