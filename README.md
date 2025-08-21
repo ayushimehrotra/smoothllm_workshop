@@ -1,1 +1,1 @@
-# Theoretical Foundations for SmoothLLM
+# Theoretical Verification for SmoothLLM
