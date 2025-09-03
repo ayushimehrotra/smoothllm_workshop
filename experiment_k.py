@@ -1,59 +1,27 @@
-import sys
-import warnings
-
-warnings.filterwarnings("ignore")
-
-
-user_site_packages = '/home/am5715/.local/lib/python3.11/site-packages'
-
-if user_site_packages in sys.path:
-    sys.path.remove(user_site_packages)
-
-sys.path.insert(0, user_site_packages)
-
-import os
-
-private_libs_path = '/home/am5715/smoothllm_workshop/my_private_libs'
-
-if private_libs_path not in sys.path:
-    sys.path.insert(0, private_libs_path)
-
-
-os.environ["ACCELERATE_DISABLE_BNB"] = "1"
-os.environ["TRANSFORMERS_SKIP_AWS"] = "1"
-os.environ["HF_HUB_OFFLINE"] = "1"
-os.environ["TRANSFORMERS_OFFLINE"] = "1"
-
-print("--- Final sys.path ---")
-for i, path in enumerate(sys.path[:5]):
-    print(f"{i}: {path}")
-print("----------------------")
-        
-        
 import torch
 import numpy as np
 import pandas as pd
 from tqdm.auto import tqdm
 import fastchat
 
-import smoothllm.lib.perturbations as perturbations
-import smoothllm.lib.defenses as defenses
-import smoothllm.lib.attacks as attacks
-import smoothllm.lib.language_models as language_models
-import smoothllm.lib.model_configs as model_configs
+import smoothllm.perturbations as perturbations
+import smoothllm.experiment_defenses as defenses
+import smoothllm.experiment_attacks as attacks
+import smoothllm.language_models as language_models
+import smoothllm.model_configs as model_configs
 
 
 torch.cuda.empty_cache()
 
 # Targeted LLM
-target_model= 'llama2'
+target_model= 'vicuna'
 
 # Attacking LLM
 attack_name='GCG'
-attack_logfile='smoothllm/lib/llmattacks_llama2.json'
+attack_logfile='smoothllm/lib/llmattacks_vicuna.json'
 
 # SmoothLLM
-smoothllm_pert_pct=1
+smoothllm_pert_pct=3
 smoothllm_pert_type='RandomSwapPerturbation'
 
 if __name__ == "__main__":
@@ -75,7 +43,7 @@ if __name__ == "__main__":
 
     # Checking defense success rate with different positions
     jb_percentage = []
-    for _ in range(3):
+    for _ in range(2):
         attack = vars(attacks)[attack_name](
             logfile=attack_logfile,
             target_model=target_model,
@@ -86,6 +54,5 @@ if __name__ == "__main__":
             output = defense(prompt)
             jb = defense.is_jailbroken(output)
             jb_percentage.append(jb)
-        print(f"Defense Executed on {len(attack.prompts)} Attacked Prompts")
-    print(f"For k={smoothllm_pert_pct}, Attack Accuracy: {np.mean(jb_percentage)}, Standard Dev.: {np.std(jb_percentage)}")
+        print(f"For k={smoothllm_pert_pct}, Attack Accuracy: {np.mean(jb_percentage)}, Standard Dev.: {np.std(jb_percentage)}")
 
