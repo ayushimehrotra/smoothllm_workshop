@@ -11,9 +11,7 @@ Code accompanying the paper **"Towards Realistic Guarantees: A Probabilistic Cer
   - `defenses.py` / `experiment_defenses.py` – SmoothLLM defense implementations for primary and experimental setups.
   - `attacks.py` / `experiment_attacks.py` – loaders for logged attack prompts and perturbation-aware variants.
   - `make_attacks.py` – runs new GCG attacks with NanoGCG to extend the control strings in the provided logs.
-- `run_attacks.py` – example script to regenerate GCG attack controls for Vicuna.
 - `experiment_k.py` – example experiment measuring SmoothLLM robustness across perturbation settings.
-- `llm-attacks/` – submodule containing upstream attack assets (see submodule docs for details).
 
 ## Requirements
 
@@ -111,7 +109,7 @@ The `SmoothLLM` defense perturbs the attack prompt multiple times, generates res
 
 ## Dataset and logs
 
-Example attack logs live under `smoothllm/lib/` (not tracked here). Place the appropriate JSON (for GCG) or pickle (for PAIR) logs in that directory when running the scripts. The code expects fields like `goal`, `target`, and `control` (for GCG) or `jailbreak_prompt` (for PAIR).
+Example attack logs will live under `smoothllm/lib/`. Place the appropriate JSON (for GCG) or pickle (for PAIR) logs in that directory when running the scripts. The code expects fields like `goal`, `target`, and `control` (for GCG) or `jailbreak_prompt` (for PAIR).
 
 ## Citation
 
