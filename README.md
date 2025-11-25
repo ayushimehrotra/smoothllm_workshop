@@ -48,20 +48,43 @@ Key options inside the script:
 - `attack_logfile`: path to the JSON log that will be updated with new controls.
 - `start_index` / `end_index`: slice of goal/target pairs to attack.
 
-### 2. Evaluate SmoothLLM robustness
+### 2. Evaluate SmoothLLM robustness across k
 
-`experiment_k.py` instantiates a target model, wraps it with the SmoothLLM defense, and measures jailbreak success under varying perturbation budgets.
+`experiment_k.py` instantiates a target model, wraps it with the SmoothLLM defense, and measures jailbreak success under varying perturbation budgets for one or more attack types.
+
+Typical invocation mirroring the paper sweeps:
 
 ```bash
-python experiment_k.py
+python experiment_k.py \
+  --target_model vicuna \
+  --attack_names GCG PAIR \
+  --attack_logfiles smoothllm/lib/llmattacks_vicuna.json smoothllm/lib/pair_vicuna.pkl \
+  --perturbation_types RandomPatchPerturbation RandomSwapPerturbation \
+  --k_values 0 1 2 3 4 5 6 7 8 9 10 \
+  --trials 3 \
+  --max_prompts 500 \
+  --output data/vicuna_attack_success.csv
 ```
 
-Tune the following parameters at the top of the script:
-- `target_model`: selects the target LLM configuration.
-- `attack_name` and `attack_logfile`: choose which logged attack prompts to replay.
-- `smoothllm_pert_type` and `smoothllm_pert_pct`: control the perturbation strategy and magnitude.
+Notable CLI options:
+- `--attack_names` / `--attack_logfiles`: aligned lists of attack loaders (e.g., `GCG`, `PAIR`) and their logs.
+- `--perturbation_types`: perturbation strategies to sweep (e.g., `RandomPatchPerturbation`, `RandomSwapPerturbation`).
+- `--k_values`: perturbation budgets to evaluate.
+- `--trials`: number of repeated runs for averaging and confidence intervals.
+- `--max_prompts`: optional cap on prompts taken from each attack log.
+- `--confidence_z`: z-score used for Agresti–Coull confidence intervals (default 1.96 for 95% CI).
 
-Outputs include attack accuracy and standard deviation across trials.
+Each run saves a CSV with per-attack, per-perturbation metrics including the mean jailbreak rate and Agresti–Coull bounds.
+
+### 3. Reproduce paper figures
+
+`generate_k_data.sh` orchestrates the Vicuna and Llama-2 sweeps used for Figures 5–10. Update the logfile paths in the script to match your environment, then run:
+
+```bash
+bash generate_k_data.sh
+```
+
+The script writes CSV outputs under `data/` for the Vicuna (RandomPatch + RandomSwap) and Llama-2 (RandomPatch) experiments across both GCG and PAIR attacks.
 
 ## Using the library components
 
