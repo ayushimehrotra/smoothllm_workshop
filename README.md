@@ -94,4 +94,4 @@ Example attack logs live under `smoothllm/lib/` (not tracked here). Place the ap
 
 If you use this codebase, please cite the accompanying paper:
 
-> Robey, A., Wong, E., Hassani, H., & Pappas, G. J. (2024). *Towards Realistic Guarantees: A Probabilistic Certificate for SmoothLLM*.
+> Kumarappan, A., Mehrotra, A. (2024). *Towards Realistic Guarantees: A Probabilistic Certificate for SmoothLLM*.
