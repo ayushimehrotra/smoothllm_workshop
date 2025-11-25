@@ -2,7 +2,7 @@ import json
 import pandas as pd
 import nanogcg
 
-import smoothllm.lib.perturbations as perturbations
+import smoothllm.perturbations as perturbations
 
 class Prompt:
     def __init__(self, full_prompt, perturbable_prompt, max_new_tokens):
