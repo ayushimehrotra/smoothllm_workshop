@@ -1,6 +1,6 @@
 # Towards Realistic Guarantees: A Probabilistic Certificate for SmoothLLM
 
-Code accompanying the paper **"Towards Realistic Guarantees: A Probabilistic Certificate for SmoothLLM"**. The repository provides scripts for reproducing adversarial attack generation and evaluating the SmoothLLM defense against jailbreaking prompts.
+Code accompanying the paper **"Towards Realistic Guarantees: A Probabilistic Certificate for SmoothLLM"** ([arXiv:2511.18721](https://arxiv.org/abs/2511.18721)). The repository provides scripts for reproducing adversarial attack generation and evaluating the SmoothLLM defense against jailbreaking prompts.
 
 ## Repository structure
 
