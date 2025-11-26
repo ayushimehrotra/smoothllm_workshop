@@ -43,7 +43,11 @@ def agresti_coull_interval(successes: int, total: int, z_value: float) -> tuple:
     adjusted_total = total + z_value**2
     adjusted_rate = (successes + 0.5 * z_value**2) / adjusted_total
     margin = z_value * np.sqrt(adjusted_rate * (1 - adjusted_rate) / adjusted_total)
-    return adjusted_rate, max(0.0, adjusted_rate - margin), min(1.0, adjusted_rate + margin)
+    return (
+        adjusted_rate,
+        max(0.0, adjusted_rate - margin),
+        min(1.0, adjusted_rate + margin),
+    )
 
 
 def evaluate_attack_success(
@@ -94,14 +98,18 @@ def evaluate_attack_success(
         trial_means.append(np.mean(jailbreak_results) if jailbreak_results else 0.0)
 
     attack_success_mean = successes / total_samples if total_samples else 0.0
-    adjusted_rate, lower, upper = agresti_coull_interval(successes, total_samples, z_value)
+    adjusted_rate, lower, upper = agresti_coull_interval(
+        successes, total_samples, z_value
+    )
 
     return {
         "attack_name": attack_name,
         "perturbation_type": pert_type,
         "k": k,
         "trials": trials,
-        "avg_samples_per_trial": float(np.mean(samples_per_trial)) if samples_per_trial else 0.0,
+        "avg_samples_per_trial": float(np.mean(samples_per_trial))
+        if samples_per_trial
+        else 0.0,
         "total_samples": total_samples,
         "successful_attacks": successes,
         "attack_success_mean": float(attack_success_mean),
@@ -181,14 +189,22 @@ def main():
 
     args = parser.parse_args()
 
-    attacks_to_run = args.attack_names or ([] if args.attack_name is None else [args.attack_name])
-    logfiles_to_use = args.attack_logfiles or ([] if args.attack_logfile is None else [args.attack_logfile])
+    attacks_to_run = args.attack_names or (
+        [] if args.attack_name is None else [args.attack_name]
+    )
+    logfiles_to_use = args.attack_logfiles or (
+        [] if args.attack_logfile is None else [args.attack_logfile]
+    )
 
     if not attacks_to_run:
-        parser.error("Please supply at least one attack via --attack_names or --attack_name.")
+        parser.error(
+            "Please supply at least one attack via --attack_names or --attack_name."
+        )
 
     if not logfiles_to_use:
-        parser.error("Please supply attack logfiles via --attack_logfiles or --attack_logfile.")
+        parser.error(
+            "Please supply attack logfiles via --attack_logfiles or --attack_logfile."
+        )
 
     if len(logfiles_to_use) == 1 and len(attacks_to_run) > 1:
         logfiles_to_use = logfiles_to_use * len(attacks_to_run)
