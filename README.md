@@ -113,6 +113,6 @@ Example attack logs will live under `smoothllm/lib/`. Place the appropriate JSON
 
 ## Citation
 
-If you use this codebase, please cite the accompanying paper ([arXiv:2511.18721](https://arxiv.org/abs/2511.18721):
+If you use this codebase, please cite the accompanying paper ([arXiv:2511.18721](https://arxiv.org/abs/2511.18721)):
 
 > Kumarappan, A., Mehrotra, A. (2024). *Towards Realistic Guarantees: A Probabilistic Certificate for SmoothLLM*.
