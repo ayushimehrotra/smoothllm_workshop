@@ -51,7 +51,7 @@ class GCG(Attack):
         # Create full prompt for LLM
         conv_template = self.target_model.conv_template
         conv_template.append_message(conv_template.roles[0], f"{goal} {control}")
-        conv_template.append_message(conv_template.roles[1], f"")
+        conv_template.append_message(conv_template.roles[1], "")
         prompt = conv_template.get_prompt()
 
         # As per the GCG source code, we encode then decode the full prompt

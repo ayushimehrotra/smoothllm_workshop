@@ -15,7 +15,9 @@ from smoothllm.certificate import compute_dsp
 
 def _require_matplotlib():
     if plt is None:
-        raise ImportError("matplotlib is required for plotting. Install it with: pip install matplotlib")
+        raise ImportError(
+            "matplotlib is required for plotting. Install it with: pip install matplotlib"
+        )
 
 
 def agresti_coull_interval(successes, total, z=1.96):
@@ -146,7 +148,9 @@ def plot_dsp_vs_N(
     ax.plot(N_vals, dsp_vals, "o-", label=f"DSP (alpha={alpha:.4f})")
 
     if target_dsp is not None:
-        ax.axhline(y=target_dsp, color="r", linestyle="--", label=f"Target DSP={target_dsp}")
+        ax.axhline(
+            y=target_dsp, color="r", linestyle="--", label=f"Target DSP={target_dsp}"
+        )
 
     ax.set_xlabel("Number of copies N")
     ax.set_ylabel("Defense Success Probability")

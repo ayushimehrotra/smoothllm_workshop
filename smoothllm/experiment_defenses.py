@@ -54,7 +54,7 @@ class SmoothLLM(Defense):
 
         batch_outputs = self.target_model(batch=batch, max_new_tokens=max_new_len)
 
-        gen_time = time.perf_counter() - t0
+        time.perf_counter() - t0
 
         # Majority vote (unchanged)
         are_copies_jailbroken = [self.is_jailbroken(s) for s in batch_outputs]

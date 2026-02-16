@@ -12,7 +12,6 @@ or:
 import math
 import sys
 import os
-import traceback
 
 import numpy as np
 from scipy.stats import hypergeom, binom
@@ -48,9 +47,9 @@ def warn(label, detail=""):
 
 
 def section(title):
-    print(f"\n{'='*70}")
+    print(f"\n{'=' * 70}")
     print(f"  {title}")
-    print(f"{'='*70}")
+    print(f"{'=' * 70}")
 
 
 # ===========================================================================
@@ -59,13 +58,11 @@ def section(title):
 section("1. INFRASTRUCTURE IMPORTS")
 
 try:
-    import smoothllm
     check(True, "import smoothllm")
 except Exception as e:
     check(False, "import smoothllm", str(e))
 
 try:
-    from smoothllm.prompt import Prompt
     check(True, "import Prompt from smoothllm.prompt")
 except Exception as e:
     check(False, "import Prompt", str(e))
@@ -81,6 +78,7 @@ try:
         compute_dsp_sweep,
         find_minimum_N,
     )
+
     check(True, "import all certificate functions")
 except Exception as e:
     check(False, "import certificate", str(e))
@@ -92,6 +90,7 @@ try:
         make_asr_func,
         find_k_for_epsilon,
     )
+
     check(True, "import all curve_fitting functions")
 except Exception as e:
     check(False, "import curve_fitting", str(e))
@@ -103,12 +102,14 @@ try:
         d_dsp_d_epsilon,
         parameter_selection_pipeline,
     )
+
     check(True, "import all sensitivity functions")
 except Exception as e:
     check(False, "import sensitivity", str(e))
 
 try:
     from smoothllm.plotting import plot_asr_vs_k, plot_dsp_vs_N
+
     check(True, "import plotting functions")
 except Exception as e:
     check(False, "import plotting", str(e))
@@ -119,12 +120,14 @@ try:
         RandomPatchPerturbation,
         RandomInsertPerturbation,
     )
+
     check(True, "import perturbation classes")
 except Exception as e:
     check(False, "import perturbations", str(e))
 
 try:
     import smoothllm.model_configs as mc
+
     check(True, "import model_configs")
 except Exception as e:
     check(False, "import model_configs", str(e))
@@ -132,12 +135,14 @@ except Exception as e:
 # Prompt deduplication
 try:
     from smoothllm.prompt import Prompt as P1
+
     # attacks.py should import from prompt
     import smoothllm.attacks as atk_mod
+
     # Check that attacks.py uses the shared Prompt
     check(
-        not hasattr(atk_mod, 'Prompt') or atk_mod.Prompt is P1,
-        "attacks.py uses shared Prompt class"
+        not hasattr(atk_mod, "Prompt") or atk_mod.Prompt is P1,
+        "attacks.py uses shared Prompt class",
     )
 except Exception as e:
     check(False, "Prompt dedup check", str(e))
@@ -217,8 +222,11 @@ for i in [0, 5, 10, 15, 24]:
     if i > min(M, m_S):
         continue
     code_val = hypergeometric_pmf(i, m, m_S, M)
-    hand_val = float(comb(m_S, i, exact=True) * comb(m - m_S, M - i, exact=True)
-                     / comb(m, M, exact=True))
+    hand_val = float(
+        comb(m_S, i, exact=True)
+        * comb(m - m_S, M - i, exact=True)
+        / comb(m, M, exact=True)
+    )
     check(
         abs(code_val - hand_val) < 1e-12,
         f"PMF(i={i}) matches hand formula: {code_val:.6e} vs {hand_val:.6e}",
@@ -229,7 +237,9 @@ pmf_sum = sum(hypergeometric_pmf(i, m, m_S, M) for i in range(min(M, m_S) + 1))
 check(abs(pmf_sum - 1.0) < 1e-10, f"PMF sums to 1.0 (got {pmf_sum:.15f})")
 
 # 3c. Mean matches E[X] = M * m_S / m
-empirical_mean = sum(i * hypergeometric_pmf(i, m, m_S, M) for i in range(min(M, m_S) + 1))
+empirical_mean = sum(
+    i * hypergeometric_pmf(i, m, m_S, M) for i in range(min(M, m_S) + 1)
+)
 expected_mean = M * m_S / m
 check(
     abs(empirical_mean - expected_mean) < 1e-8,
@@ -249,7 +259,9 @@ section("4. ALPHA LOWER BOUND — Eq. (2)")
 k_test, eps_test = 6, 0.05
 
 # 4a. Compute by hand
-p_k_plus_hand = sum(hypergeometric_pmf(i, m, m_S, M) for i in range(k_test, min(M, m_S) + 1))
+p_k_plus_hand = sum(
+    hypergeometric_pmf(i, m, m_S, M) for i in range(k_test, min(M, m_S) + 1)
+)
 alpha_lower_hand = (1.0 - eps_test) * p_k_plus_hand
 alpha_lower_code = alpha_lower_bound(k_test, m, m_S, M, eps_test)
 check(
@@ -294,12 +306,10 @@ asr_func = make_asr_func(a_fit, b_fit, c_fit)
 
 # 5a. Compute by hand
 sub_threshold_sum = sum(
-    (1.0 - asr_func(i)) * hypergeometric_pmf(i, m, m_S, M)
-    for i in range(k_test)
+    (1.0 - asr_func(i)) * hypergeometric_pmf(i, m, m_S, M) for i in range(k_test)
 )
 above_threshold_sum = (1.0 - eps_test) * sum(
-    hypergeometric_pmf(i, m, m_S, M)
-    for i in range(k_test, min(M, m_S) + 1)
+    hypergeometric_pmf(i, m, m_S, M) for i in range(k_test, min(M, m_S) + 1)
 )
 alpha_tighter_hand = sub_threshold_sum + above_threshold_sum
 alpha_tighter_code = alpha_tighter_bound(k_test, m, m_S, M, eps_test, asr_func)
@@ -333,6 +343,7 @@ section("6. DSP COMPUTATION — Eq. (1)")
 # DSP = sum_{t=ceil(N/2)}^{N} C(N,t) * alpha^t * (1-alpha)^{N-t}
 # Code:  DSP = 1 - binom.cdf(ceil(N/2)-1, N, alpha)
 
+
 # 6a. Hand computation for small N
 def dsp_hand(alpha, N):
     """Direct summation of binomial terms."""
@@ -341,6 +352,7 @@ def dsp_hand(alpha, N):
         comb(N, t, exact=True) * alpha**t * (1.0 - alpha) ** (N - t)
         for t in range(t_start, N + 1)
     )
+
 
 for N_val in [1, 3, 5, 11, 21]:
     for alpha_val in [0.5, 0.7, 0.9, 0.95]:
@@ -397,7 +409,9 @@ check(abs(c_r - 0.01) < 0.01, f"Fit recovers c=0.01 (got {c_r:.6f})")
 
 # 7c. Fit with noise still recovers approximately
 np.random.seed(42)
-asr_noisy = 0.3 * np.exp(-0.4 * k_synth) + 0.01 + np.random.normal(0, 0.01, len(k_synth))
+asr_noisy = (
+    0.3 * np.exp(-0.4 * k_synth) + 0.01 + np.random.normal(0, 0.01, len(k_synth))
+)
 asr_noisy = np.clip(asr_noisy, 0, 1)
 a_n, b_n, c_n, _ = fit_asr_curve(k_synth, asr_noisy)
 check(abs(a_n - 0.3) < 0.05, f"Noisy fit recovers a~0.3 (got {a_n:.4f})")
@@ -471,9 +485,14 @@ section("10. SECTION 3.7 CASE STUDY")
 # DSP >= 0.95, paper claims N=10
 
 result = parameter_selection_pipeline(
-    a=a_fit, b=b_fit, c=c_fit,
-    m=240, m_S=100, q=0.10,
-    epsilon=0.05, target_dsp=0.95,
+    a=a_fit,
+    b=b_fit,
+    c=c_fit,
+    m=240,
+    m_S=100,
+    q=0.10,
+    epsilon=0.05,
+    target_dsp=0.95,
     perturbation_type="RandomSwapPerturbation",
 )
 
@@ -505,7 +524,7 @@ if result["N"] != 10:
         f"Pipeline N={result['N']} differs from paper's N=10",
         "Paper's N=10 refers to Figure 4 (k=8) or uses the conservative bound. "
         f"Our tighter bound gives alpha={result['alpha_tighter']:.4f}, so fewer "
-        f"copies suffice. DSP={result['dsp']:.4f} >> 0.95. Mathematically correct."
+        f"copies suffice. DSP={result['dsp']:.4f} >> 0.95. Mathematically correct.",
     )
 
 
@@ -534,8 +553,12 @@ N_tight_fig4 = find_minimum_N(alpha_tight_fig4, 0.95)
 dsp_at_10_lo = compute_dsp(alpha_lo_fig4, 10)
 dsp_at_10_tight = compute_dsp(alpha_tight_fig4, 10)
 
-print(f"  INFO  Figure 4 with lower bound: alpha={alpha_lo_fig4:.6f}, min N={N_lo_fig4}, DSP(N=10)={dsp_at_10_lo:.6f}")
-print(f"  INFO  Figure 4 with tighter bound: alpha={alpha_tight_fig4:.6f}, min N={N_tight_fig4}, DSP(N=10)={dsp_at_10_tight:.6f}")
+print(
+    f"  INFO  Figure 4 with lower bound: alpha={alpha_lo_fig4:.6f}, min N={N_lo_fig4}, DSP(N=10)={dsp_at_10_lo:.6f}"
+)
+print(
+    f"  INFO  Figure 4 with tighter bound: alpha={alpha_tight_fig4:.6f}, min N={N_tight_fig4}, DSP(N=10)={dsp_at_10_tight:.6f}"
+)
 
 check(
     dsp_at_10_tight >= 0.95,
@@ -560,7 +583,7 @@ m_small, m_S_small, M_small = 10, 4, 3
 # start=5: covers 5,6,7 -> overlap=2
 # start=6: covers 6,7,8 -> overlap=3
 # start=7: covers 7,8,9 -> overlap=3
-expected_pmf = {0: 4/8, 1: 1/8, 2: 1/8, 3: 2/8}
+expected_pmf = {0: 4 / 8, 1: 1 / 8, 2: 1 / 8, 3: 2 / 8}
 
 for i_val, expected in expected_pmf.items():
     got = patch_overlap_pmf(i_val, m_small, m_S_small, M_small)
@@ -574,13 +597,13 @@ pmf_patch_sum = sum(
     patch_overlap_pmf(i, m_small, m_S_small, M_small)
     for i in range(min(m_S_small, M_small) + 1)
 )
-check(abs(pmf_patch_sum - 1.0) < 1e-10, f"Patch PMF sums to 1.0 (got {pmf_patch_sum:.10f})")
+check(
+    abs(pmf_patch_sum - 1.0) < 1e-10,
+    f"Patch PMF sums to 1.0 (got {pmf_patch_sum:.10f})",
+)
 
 # With paper's parameters
-pmf_paper_sum = sum(
-    patch_overlap_pmf(i, 240, 100, 24)
-    for i in range(min(100, 24) + 1)
-)
+pmf_paper_sum = sum(patch_overlap_pmf(i, 240, 100, 24) for i in range(min(100, 24) + 1))
 check(
     abs(pmf_paper_sum - 1.0) < 1e-10,
     f"Patch PMF for paper params sums to 1.0 (got {pmf_paper_sum:.10f})",
@@ -601,12 +624,10 @@ alpha_patch = alpha_patch_tighter_bound(k_test, m, m_S, M, eps_test, asr_func)
 
 # Hand computation
 sub_patch = sum(
-    (1.0 - asr_func(i)) * patch_overlap_pmf(i, m, m_S, M)
-    for i in range(k_test)
+    (1.0 - asr_func(i)) * patch_overlap_pmf(i, m, m_S, M) for i in range(k_test)
 )
 above_patch = (1.0 - eps_test) * sum(
-    patch_overlap_pmf(i, m, m_S, M)
-    for i in range(k_test, min(m_S, M) + 1)
+    patch_overlap_pmf(i, m, m_S, M) for i in range(k_test, min(m_S, M) + 1)
 )
 alpha_patch_hand = sub_patch + above_patch
 
@@ -695,13 +716,16 @@ for alpha_val in [0.6, 0.7, 0.8, 0.9]:
     if N_min is not None:
         # N_min achieves DSP >= 0.95
         dsp_at_N = compute_dsp(alpha_val, N_min)
-        check(dsp_at_N >= 0.95, f"alpha={alpha_val}: N={N_min} gives DSP={dsp_at_N:.6f} >= 0.95")
+        check(
+            dsp_at_N >= 0.95,
+            f"alpha={alpha_val}: N={N_min} gives DSP={dsp_at_N:.6f} >= 0.95",
+        )
         # N_min - 2 does NOT (verifies minimality for odd N)
         if N_min >= 3:
             dsp_below = compute_dsp(alpha_val, N_min - 2)
             check(
                 dsp_below < 0.95,
-                f"alpha={alpha_val}: N={N_min-2} gives DSP={dsp_below:.6f} < 0.95 (minimal)",
+                f"alpha={alpha_val}: N={N_min - 2} gives DSP={dsp_below:.6f} < 0.95 (minimal)",
             )
 
 
@@ -712,6 +736,7 @@ section("17. PLOTTING VERIFICATION")
 
 import tempfile
 import matplotlib
+
 matplotlib.use("Agg")  # headless
 
 # 17a. plot_dsp_vs_N runs without error and produces a file
@@ -733,16 +758,27 @@ except Exception as e:
 # 17b. plot_asr_vs_k with synthetic CSV
 try:
     import pandas as pd
+
     with tempfile.NamedTemporaryFile(suffix=".csv", delete=False, mode="w") as f:
         tmpcsv = f.name
-        df = pd.DataFrame({
-            "k": list(range(11)),
-            "attack_success_mean": [a_fit * math.exp(-b_fit * k) + c_fit for k in range(11)],
-            "agresti_coull_low": [max(0, a_fit * math.exp(-b_fit * k) + c_fit - 0.05) for k in range(11)],
-            "agresti_coull_high": [min(1, a_fit * math.exp(-b_fit * k) + c_fit + 0.05) for k in range(11)],
-            "attack_name": ["GCG"] * 11,
-            "perturbation_type": ["RandomSwapPerturbation"] * 11,
-        })
+        df = pd.DataFrame(
+            {
+                "k": list(range(11)),
+                "attack_success_mean": [
+                    a_fit * math.exp(-b_fit * k) + c_fit for k in range(11)
+                ],
+                "agresti_coull_low": [
+                    max(0, a_fit * math.exp(-b_fit * k) + c_fit - 0.05)
+                    for k in range(11)
+                ],
+                "agresti_coull_high": [
+                    min(1, a_fit * math.exp(-b_fit * k) + c_fit + 0.05)
+                    for k in range(11)
+                ],
+                "attack_name": ["GCG"] * 11,
+                "perturbation_type": ["RandomSwapPerturbation"] * 11,
+            }
+        )
         df.to_csv(f, index=False)
 
     with tempfile.NamedTemporaryFile(suffix=".png", delete=False) as f:
@@ -765,14 +801,19 @@ except Exception as e:
 # 17c. fit_from_csv works with synthetic data
 try:
     from smoothllm.curve_fitting import fit_from_csv
+
     with tempfile.NamedTemporaryFile(suffix=".csv", delete=False, mode="w") as f:
         tmpcsv2 = f.name
-        df = pd.DataFrame({
-            "k": list(range(11)),
-            "attack_success_mean": [0.3 * math.exp(-0.4 * k) + 0.01 for k in range(11)],
-            "attack_name": ["GCG"] * 11,
-            "perturbation_type": ["RandomSwapPerturbation"] * 11,
-        })
+        df = pd.DataFrame(
+            {
+                "k": list(range(11)),
+                "attack_success_mean": [
+                    0.3 * math.exp(-0.4 * k) + 0.01 for k in range(11)
+                ],
+                "attack_name": ["GCG"] * 11,
+                "perturbation_type": ["RandomSwapPerturbation"] * 11,
+            }
+        )
         df.to_csv(f, index=False)
 
     a_csv, b_csv, c_csv, _ = fit_from_csv(
@@ -837,7 +878,9 @@ try:
     )
     # Check Llama2 + Swap is present (was missing before fix)
     llama2_swap = "llama2" in script.lower() and "RandomSwapPerturbation" in script
-    check(llama2_swap, "generate_k_data.sh includes Llama2 + RandomSwapPerturbation sweep")
+    check(
+        llama2_swap, "generate_k_data.sh includes Llama2 + RandomSwapPerturbation sweep"
+    )
 except Exception as e:
     check(False, "generate_k_data.sh analysis", str(e))
 
@@ -849,6 +892,7 @@ section("20. FULL FORMULA CROSS-CHECK")
 
 # Independently implement the entire DSP pipeline from scratch
 # using only basic math and scipy, no smoothllm functions
+
 
 def independent_dsp(a, b, c, m, m_S, q, epsilon, N):
     """Compute DSP from scratch without using any smoothllm code."""
@@ -955,15 +999,25 @@ if os.path.exists(fig_output_dir):
 
 # 23a. generate_figures.py runs without error
 try:
-    script_path = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))),
-                                "generate_figures.py")
+    script_path = os.path.join(
+        os.path.dirname(os.path.dirname(os.path.abspath(__file__))),
+        "generate_figures.py",
+    )
     result_proc = subprocess.run(
         [sys.executable, script_path, "--output-dir", fig_output_dir],
-        capture_output=True, text=True, timeout=60,
-        env={**os.environ, "PYTHONPATH": os.path.dirname(os.path.dirname(os.path.abspath(__file__)))}
+        capture_output=True,
+        text=True,
+        timeout=60,
+        env={
+            **os.environ,
+            "PYTHONPATH": os.path.dirname(os.path.dirname(os.path.abspath(__file__))),
+        },
     )
-    check(result_proc.returncode == 0, "generate_figures.py runs successfully",
-          result_proc.stderr[:200] if result_proc.returncode != 0 else "")
+    check(
+        result_proc.returncode == 0,
+        "generate_figures.py runs successfully",
+        result_proc.stderr[:200] if result_proc.returncode != 0 else "",
+    )
 except Exception as e:
     check(False, "generate_figures.py execution", str(e))
 
@@ -979,13 +1033,16 @@ for fig_num in [1, 2, 4]:
 # 23c. Figures 5-10 are correctly skipped without --data-dir
 for fig_num in [5, 6, 7, 8, 9, 10]:
     fig_path = os.path.join(fig_output_dir, f"figure_{fig_num}.pdf")
-    check(not os.path.exists(fig_path),
-          f"Figure {fig_num} correctly skipped (no --data-dir)")
+    check(
+        not os.path.exists(fig_path),
+        f"Figure {fig_num} correctly skipped (no --data-dir)",
+    )
 
 # 23d. Verify Figure 1 uses correct paper parameters
 # (Llama2 + RandomPatchPerturbation + GCG: a=0.1650, b=0.1121, c=0.0427)
 try:
     from generate_figures import PAPER_FITS
+
     p1 = PAPER_FITS[1]
     check(abs(p1["a"] - 0.1650) < 1e-4, f"Figure 1: a={p1['a']} (paper: 0.1650)")
     check(abs(p1["b"] - 0.1121) < 1e-4, f"Figure 1: b={p1['b']} (paper: 0.1121)")
@@ -1012,29 +1069,39 @@ except Exception as e:
 # 23f. Verify Figure 4 uses correct paper parameters
 try:
     from generate_figures import FIG4_PARAMS
+
     check(FIG4_PARAMS["m"] == 240, f"Figure 4: m={FIG4_PARAMS['m']} (paper: 240)")
     check(FIG4_PARAMS["m_S"] == 100, f"Figure 4: m_S={FIG4_PARAMS['m_S']} (paper: 100)")
-    check(abs(FIG4_PARAMS["q"] - 0.10) < 1e-10, f"Figure 4: q={FIG4_PARAMS['q']} (paper: 0.10)")
+    check(
+        abs(FIG4_PARAMS["q"] - 0.10) < 1e-10,
+        f"Figure 4: q={FIG4_PARAMS['q']} (paper: 0.10)",
+    )
     check(FIG4_PARAMS["k"] == 8, f"Figure 4: k={FIG4_PARAMS['k']} (paper: 8)")
-    check(abs(FIG4_PARAMS["epsilon"] - 0.05) < 1e-10, f"Figure 4: epsilon={FIG4_PARAMS['epsilon']} (paper: 0.05)")
+    check(
+        abs(FIG4_PARAMS["epsilon"] - 0.05) < 1e-10,
+        f"Figure 4: epsilon={FIG4_PARAMS['epsilon']} (paper: 0.05)",
+    )
 except Exception as e:
     check(False, "Figure 4 paper params", str(e))
 
 # 23g. Verify Figures 5-10 cover all model/attack/perturbation combos from the paper
 try:
     from generate_figures import EMPIRICAL_FIGURES
+
     expected_combos = {
-        5:  ("Vicuna", "GCG",  "RandomPatchPerturbation"),
-        6:  ("Vicuna", "GCG",  "RandomSwapPerturbation"),
-        7:  ("Vicuna", "PAIR", "RandomPatchPerturbation"),
-        8:  ("Vicuna", "PAIR", "RandomSwapPerturbation"),
-        9:  ("Llama2", "PAIR", "RandomPatchPerturbation"),
+        5: ("Vicuna", "GCG", "RandomPatchPerturbation"),
+        6: ("Vicuna", "GCG", "RandomSwapPerturbation"),
+        7: ("Vicuna", "PAIR", "RandomPatchPerturbation"),
+        8: ("Vicuna", "PAIR", "RandomSwapPerturbation"),
+        9: ("Llama2", "PAIR", "RandomPatchPerturbation"),
         10: ("Llama2", "PAIR", "RandomSwapPerturbation"),
     }
     for fig_num, (model, attack, pert) in expected_combos.items():
         info = EMPIRICAL_FIGURES[fig_num]
         check(
-            info["model"] == model and info["attack"] == attack and info["pert"] == pert,
+            info["model"] == model
+            and info["attack"] == attack
+            and info["pert"] == pert,
             f"Figure {fig_num}: {model}/{attack}/{pert}",
         )
 except Exception as e:
@@ -1044,21 +1111,32 @@ except Exception as e:
 # Both conservative and tighter bounds should reach DSP >= 0.95 for some N <= 51
 try:
     from generate_figures import FIG4_PARAMS, PAPER_FITS
+
     p = FIG4_PARAMS
     M_fig4 = math.floor(p["q"] * p["m"])
-    asr_func_fig4 = make_asr_func(PAPER_FITS[2]["a"], PAPER_FITS[2]["b"], PAPER_FITS[2]["c"])
+    asr_func_fig4 = make_asr_func(
+        PAPER_FITS[2]["a"], PAPER_FITS[2]["b"], PAPER_FITS[2]["c"]
+    )
     alpha_lo_f4 = alpha_lower_bound(p["k"], p["m"], p["m_S"], M_fig4, p["epsilon"])
-    alpha_tight_f4 = alpha_tighter_bound(p["k"], p["m"], p["m_S"], M_fig4, p["epsilon"], asr_func_fig4)
+    alpha_tight_f4 = alpha_tighter_bound(
+        p["k"], p["m"], p["m_S"], M_fig4, p["epsilon"], asr_func_fig4
+    )
 
     N_lo_f4 = find_minimum_N(alpha_lo_f4, 0.95)
     N_tight_f4 = find_minimum_N(alpha_tight_f4, 0.95)
 
-    check(N_lo_f4 is not None and N_lo_f4 <= 51,
-          f"Figure 4 conservative bound: DSP≥0.95 achieved at N={N_lo_f4} (≤51)")
-    check(N_tight_f4 is not None and N_tight_f4 <= 51,
-          f"Figure 4 tighter bound: DSP≥0.95 achieved at N={N_tight_f4} (≤51)")
-    check(alpha_tight_f4 >= alpha_lo_f4,
-          f"Figure 4: tighter alpha ({alpha_tight_f4:.6f}) >= conservative ({alpha_lo_f4:.6f})")
+    check(
+        N_lo_f4 is not None and N_lo_f4 <= 51,
+        f"Figure 4 conservative bound: DSP≥0.95 achieved at N={N_lo_f4} (≤51)",
+    )
+    check(
+        N_tight_f4 is not None and N_tight_f4 <= 51,
+        f"Figure 4 tighter bound: DSP≥0.95 achieved at N={N_tight_f4} (≤51)",
+    )
+    check(
+        alpha_tight_f4 >= alpha_lo_f4,
+        f"Figure 4: tighter alpha ({alpha_tight_f4:.6f}) >= conservative ({alpha_lo_f4:.6f})",
+    )
 except Exception as e:
     check(False, "Figure 4 math verification", str(e))
 
@@ -1072,7 +1150,9 @@ if os.path.exists(fig_output_dir):
 # ===========================================================================
 section("FINAL SUMMARY")
 total = PASS + FAIL
-print(f"\n  Results: {PASS} passed, {FAIL} failed, {WARN} warnings out of {total} tests")
+print(
+    f"\n  Results: {PASS} passed, {FAIL} failed, {WARN} warnings out of {total} tests"
+)
 if FAIL == 0:
     print(f"\n  ALL {PASS} TESTS PASSED")
     if WARN > 0:

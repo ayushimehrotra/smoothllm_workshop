@@ -3,8 +3,6 @@ import json
 import nanogcg
 from nanogcg import GCGConfig
 
-from smoothllm.prompt import Prompt
-
 
 class Attack:
     def __init__(self, logfile, target_model):
