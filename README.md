@@ -1,56 +1,64 @@
 # Towards Realistic Guarantees: A Probabilistic Certificate for SmoothLLM
 
-Code accompanying the paper **"Towards Realistic Guarantees: A Probabilistic Certificate for SmoothLLM"** ([arXiv:2511.18721](https://arxiv.org/abs/2511.18721)). The repository provides scripts for reproducing adversarial attack generation and evaluating the SmoothLLM defense against jailbreaking prompts.
+Code accompanying the paper **"Towards Realistic Guarantees: A Probabilistic Certificate for SmoothLLM"** ([arXiv:2511.18721](https://arxiv.org/abs/2511.18721)). The repository provides scripts for reproducing adversarial attack generation, evaluating the SmoothLLM defense against jailbreaking prompts, and computing the probabilistic certificate (DSP) from the paper.
 
 ## Repository structure
 
 - `smoothllm/` – core library code
-  - `language_models.py` – thin wrapper around Hugging Face models with FastChat conversation templates.
-  - `model_configs.py` – local paths and templates for supported models (Llama-2-7b-chat, Vicuna-13B). Update these paths to match your environment.
+  - `__init__.py` – package init with public API exports.
+  - `prompt.py` – shared `Prompt` class used across attack/defense modules.
+  - `language_models.py` – thin wrapper around Hugging Face models with FastChat conversation templates. Supports CUDA, MPS, and CPU.
+  - `model_configs.py` – model paths and templates for supported models (Llama-2-7b-chat, Vicuna-13B). Paths are configurable via environment variables.
   - `perturbations.py` – random perturbation primitives (swap, patch, insert) used by SmoothLLM.
   - `defenses.py` / `experiment_defenses.py` – SmoothLLM defense implementations for primary and experimental setups.
   - `attacks.py` / `experiment_attacks.py` – loaders for logged attack prompts and perturbation-aware variants.
   - `make_attacks.py` – runs new GCG attacks with NanoGCG to extend the control strings in the provided logs.
-- `experiment_k.py` – example experiment measuring SmoothLLM robustness across perturbation settings.
+  - `certificate.py` – DSP computation, hypergeometric PMF, binomial CDF, alpha bounds (Propositions 1 & 2).
+  - `curve_fitting.py` – exponential ASR model fitting: `ASR(k) = a * exp(-b*k) + c`.
+  - `plotting.py` – figure generation (ASR vs k with CI bands, DSP vs N).
+  - `sensitivity.py` – sensitivity analysis and Section 3.7 parameter selection pipeline.
+  - `lib/` – directory for attack log files (see `lib/README.md` for details).
+- `experiment_k.py` – evaluate SmoothLLM robustness across perturbation budgets k.
+- `run_attacks.py` – generate GCG attack control strings.
+- `generate_k_data.sh` – orchestrate full experiment sweeps for paper figures.
 
 ## Requirements
 
 - Python 3.10+
-- CUDA-capable GPU if running generation locally.
-- Installed Python packages: `torch`, `transformers`, `fastchat`, `pandas`, `numpy`, `tqdm`, `nanogcg`.
+- CUDA-capable GPU recommended for model inference (MPS and CPU also supported).
 
-Install dependencies into your environment:
+Install dependencies:
 
 ```bash
-pip install torch transformers fastchat pandas numpy tqdm nanogcg
+pip install -r requirements.txt
 ```
-
-> Note: Model downloads are expected to be available locally. Set `local_files_only=True` is used in `language_models.LLM`, so ensure weights and tokenizers are already present at the configured paths.
 
 ## Model setup
 
-The default model locations are configured in `smoothllm/model_configs.py`. Update the `model_path` and `tokenizer_path` entries to point to your local checkpoints before running any scripts. Conversation templates should align with the chosen model (e.g., `llama-2`, `vicuna`).
+Model paths are configured in `smoothllm/model_configs.py`. Set them via environment variables:
+
+```bash
+export SMOOTHLLM_LLAMA2_PATH="/path/to/Llama-2-7b-chat-hf"
+export SMOOTHLLM_VICUNA_PATH="/path/to/vicuna-13b-v1.5"
+```
+
+If environment variables are not set, the code falls back to looking for model directories inside `smoothllm/`.
+
+> Note: `local_files_only=True` is used in `language_models.LLM`, so ensure weights and tokenizers are already present at the configured paths.
 
 ## Running the included scripts
 
 ### 1. Generate or extend GCG attack logs
 
-`run_attacks.py` launches NanoGCG to produce control strings for the GCG attack and appends them to the provided log file (`smoothllm/lib/llmattacks_vicuna.json` by default).
+`run_attacks.py` launches NanoGCG to produce control strings for the GCG attack and appends them to the provided log file.
 
 ```bash
 python run_attacks.py
 ```
 
-Key options inside the script:
-- `target_model`: selects the model configuration key from `model_configs.MODELS`.
-- `attack_logfile`: path to the JSON log that will be updated with new controls.
-- `start_index` / `end_index`: slice of goal/target pairs to attack.
-
 ### 2. Evaluate SmoothLLM robustness across k
 
-`experiment_k.py` instantiates a target model, wraps it with the SmoothLLM defense, and measures jailbreak success under varying perturbation budgets for one or more attack types.
-
-Typical invocation mirroring the paper sweeps:
+`experiment_k.py` instantiates a target model, wraps it with the SmoothLLM defense, and measures jailbreak success under varying perturbation budgets.
 
 ```bash
 python experiment_k.py \
@@ -64,34 +72,20 @@ python experiment_k.py \
   --output data/vicuna_attack_success.csv
 ```
 
-Notable CLI options:
-- `--attack_names` / `--attack_logfiles`: aligned lists of attack loaders (e.g., `GCG`, `PAIR`) and their logs.
-- `--perturbation_types`: perturbation strategies to sweep (e.g., `RandomPatchPerturbation`, `RandomSwapPerturbation`).
-- `--k_values`: perturbation budgets to evaluate.
-- `--trials`: number of repeated runs for averaging and confidence intervals.
-- `--max_prompts`: optional cap on prompts taken from each attack log.
-- `--confidence_z`: z-score used for Agresti–Coull confidence intervals (default 1.96 for 95% CI).
-
-Each run saves a CSV with per-attack, per-perturbation metrics including the mean jailbreak rate and Agresti–Coull bounds.
-
 ### 3. Reproduce paper figures
 
-`generate_k_data.sh` orchestrates the Vicuna and Llama-2 sweeps used for Figures 5–10. Update the logfile paths in the script to match your environment, then run:
+`generate_k_data.sh` orchestrates the Vicuna and Llama-2 sweeps used for Figures 5-10:
 
 ```bash
 bash generate_k_data.sh
 ```
 
-The script writes CSV outputs under `data/` for the Vicuna (RandomPatch + RandomSwap) and Llama-2 (RandomPatch) experiments across both GCG and PAIR attacks.
-
 ## Using the library components
 
-You can also import the components directly to build custom experiments:
+### Attack and defense experiments
 
 ```python
 from smoothllm.language_models import LLM
-from smoothllm.defenses import SmoothLLM
-from smoothllm.attacks import GCG, PAIR
 from smoothllm.model_configs import MODELS
 
 config = MODELS['vicuna']
@@ -99,17 +93,61 @@ model = LLM(
     model_path=config['model_path'],
     tokenizer_path=config['tokenizer_path'],
     conv_template_name=config['conversation_template'],
-    device='cuda:0'
 )
-defense = SmoothLLM(target_model=model, pert_type='RandomSwapPerturbation', pert_pct=3, num_copies=64)
-attack = GCG(logfile='smoothllm/lib/llmattacks_vicuna.json', target_model=model)
 ```
 
-The `SmoothLLM` defense perturbs the attack prompt multiple times, generates responses in batches, and returns a majority-vote response that aims to reject jailbreaks.
+### Probabilistic certificate (no GPU needed)
+
+```python
+from smoothllm.certificate import compute_dsp, alpha_lower_bound
+from smoothllm.curve_fitting import fit_asr_curve, make_asr_func, find_k_for_epsilon
+
+# Fit ASR curve from experiment CSV
+a, b, c, _ = fit_asr_curve(k_values, asr_values)
+
+# Find minimum k for target epsilon
+k = find_k_for_epsilon(a, b, c, epsilon=0.05)
+
+# Compute alpha and DSP
+M = round(0.10 * 240)  # 10% perturbation rate on 240-char region
+alpha = alpha_lower_bound(k, m=240, m_S=100, M=M, epsilon=0.05)
+dsp = compute_dsp(alpha, N=11)
+```
+
+### End-to-end parameter selection (Section 3.7)
+
+```python
+from smoothllm.sensitivity import parameter_selection_pipeline
+
+result = parameter_selection_pipeline(
+    a=0.2921, b=0.3756, c=0.0133,
+    m=240, m_S=100, q=0.10,
+    epsilon=0.05, target_dsp=0.95,
+    perturbation_type='RandomSwapPerturbation'
+)
+print(f"k={result['k']}, N={result['N']}, DSP={result['dsp']:.4f}")
+```
+
+### Plotting
+
+```python
+from smoothllm.plotting import plot_asr_vs_k, plot_dsp_vs_N
+
+# ASR vs k with confidence intervals and fitted curve
+plot_asr_vs_k("data/vicuna_attack_success.csv",
+              attack_name="GCG",
+              perturbation_type="RandomSwapPerturbation",
+              fit_params=(0.29, 0.38, 0.01),
+              save_path="figures/asr_vs_k.png")
+
+# DSP vs N
+plot_dsp_vs_N(alpha=0.91, target_dsp=0.95,
+              save_path="figures/dsp_vs_N.png")
+```
 
 ## Dataset and logs
 
-Example attack logs will live under `smoothllm/lib/`. Place the appropriate JSON (for GCG) or pickle (for PAIR) logs in that directory when running the scripts. The code expects fields like `goal`, `target`, and `control` (for GCG) or `jailbreak_prompt` (for PAIR).
+Example attack logs should be placed under `smoothllm/lib/`. See `smoothllm/lib/README.md` for the expected formats and how to obtain them.
 
 ## Citation
 

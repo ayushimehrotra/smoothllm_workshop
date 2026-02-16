@@ -14,7 +14,8 @@ import smoothllm.language_models as language_models
 import smoothllm.model_configs as model_configs
 
 
-torch.cuda.empty_cache()
+if torch.cuda.is_available():
+    torch.cuda.empty_cache()
 
 
 def build_attack(attack_name, logfile, target_model, pert_type, pert_pct):
@@ -179,7 +180,7 @@ def main():
         "--confidence_z",
         type=float,
         default=1.96,
-        help="Z-score for Agresti-Coull confidence interval (default 95% CI)",
+        help="Z-score for Agresti-Coull confidence interval (default 95%% CI)",
     )
     parser.add_argument(
         "--output",
@@ -217,7 +218,6 @@ def main():
         model_path=config["model_path"],
         tokenizer_path=config["tokenizer_path"],
         conv_template_name=config["conversation_template"],
-        device="cuda:0",
     )
 
     results = []

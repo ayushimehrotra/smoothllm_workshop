@@ -1,0 +1,31 @@
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+dist/
+build/
+*.egg
+
+# Generated outputs
+figures/
+data/
+
+# PDFs (paper, not code)
+*.pdf
+
+# Environment
+.env
+*.log
+
+# Internal docs
+CODEBASE_AUDIT.md
+
+# OS
+.DS_Store
+Thumbs.db
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo

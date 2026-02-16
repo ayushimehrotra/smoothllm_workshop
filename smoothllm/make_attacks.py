@@ -1,24 +1,9 @@
 import json
-import pandas as pd
-import nanogcg
 
+import nanogcg
 from nanogcg import GCGConfig
 
-import smoothllm.lib.perturbations as perturbations
-
-
-class Prompt:
-    def __init__(self, full_prompt, perturbable_prompt, max_new_tokens):
-        self.full_prompt = full_prompt
-        self.perturbable_prompt = perturbable_prompt
-        self.max_new_tokens = max_new_tokens
-
-    def perturb(self, perturbation_fn):
-        perturbed_prompt = perturbation_fn(self.perturbable_prompt)
-        self.full_prompt = self.full_prompt.replace(
-            self.perturbable_prompt, perturbed_prompt
-        )
-        self.perturbable_prompt = perturbed_prompt
+from smoothllm.prompt import Prompt
 
 
 class Attack:
@@ -57,14 +42,8 @@ class GCG(Attack):
             with open(self.logfile, "w") as f:
                 json.dump(self.log, f, indent=4)
 
-    def create_prompt(
-        self, goal, target, config, max_new_len=100
-    ):  # Add config as an argument
+    def create_prompt(self, goal, target, config):
         """Create GCG prompt and run the attack."""
-
-        max_new_tokens = max(
-            len(self.target_model.tokenizer(target).input_ids) + 2, max_new_len
-        )
 
         control = nanogcg.run(
             self.target_model.model, self.target_model.tokenizer, goal, target, config

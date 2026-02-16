@@ -3,7 +3,7 @@ import copy
 import random
 import numpy as np
 
-import lib.perturbations as perturbations
+import smoothllm.perturbations as perturbations
 
 
 class Defense:
@@ -48,7 +48,7 @@ class SmoothLLM(Defense):
         self.perturbation_fn = vars(perturbations)[pert_type](q=pert_pct)
 
     @torch.no_grad()
-    def __call__(self, prompt, batch_size=64, max_new_len=100):
+    def __call__(self, prompt, batch_size=64):
         all_inputs = []
         for _ in range(self.num_copies):
             prompt_copy = copy.deepcopy(prompt)
@@ -67,7 +67,8 @@ class SmoothLLM(Defense):
             )
 
             all_outputs.extend(batch_outputs)
-            torch.cuda.empty_cache()
+            if torch.cuda.is_available():
+                torch.cuda.empty_cache()
 
         # Check whether the outputs jailbreak the LLM
         are_copies_jailbroken = [self.is_jailbroken(s) for s in all_outputs]

@@ -38,6 +38,17 @@ python experiment_k.py \
   --k_values "${K_VALUES[@]}" \
   --trials "$TRIALS" \
   --max_prompts "$MAX_PROMPTS" \
-  --output "$OUTPUT_DIR/llama2_attack_success.csv"
+  --output "$OUTPUT_DIR/llama2_patch_attack_success.csv"
+
+echo "Starting Llama2 sweeps (RandomSwap across GCG and PAIR)"
+python experiment_k.py \
+  --target_model llama2 \
+  --attack_names GCG PAIR \
+  --attack_logfiles "$LLAMA2_GCG_LOG" "$LLAMA2_PAIR_LOG" \
+  --perturbation_types RandomSwapPerturbation \
+  --k_values "${K_VALUES[@]}" \
+  --trials "$TRIALS" \
+  --max_prompts "$MAX_PROMPTS" \
+  --output "$OUTPUT_DIR/llama2_swap_attack_success.csv"
 
 echo "Attack success data saved under $OUTPUT_DIR/"

@@ -1,19 +1,6 @@
 import json
-import pandas as pd
 
-
-class Prompt:
-    def __init__(self, full_prompt, perturbable_prompt, max_new_tokens):
-        self.full_prompt = full_prompt
-        self.perturbable_prompt = perturbable_prompt
-        self.max_new_tokens = max_new_tokens
-
-    def perturb(self, perturbation_fn):
-        perturbed_prompt = perturbation_fn(self.perturbable_prompt)
-        self.full_prompt = self.full_prompt.replace(
-            self.perturbable_prompt, perturbed_prompt
-        )
-        self.perturbable_prompt = perturbed_prompt
+from smoothllm.prompt import Prompt
 
 
 class Attack:
@@ -39,18 +26,18 @@ class GCG(Attack):
 
         self.goals = log["goal"]
         self.targets = log["target"]
-        self.controls = log["controls"]
+        self.controls = log["control"]
 
         self.prompts = [
             self.create_prompt(g, c, t)
             for (g, c, t) in zip(self.goals, self.controls, self.targets)
         ]
 
-    def create_prompt(self, goal, control, target, max_new_len=100):
+    def create_prompt(self, goal, control, target):
         """Create GCG prompt."""
 
         max_new_tokens = max(
-            len(self.target_model.tokenizer(target).input_ids) + 2, max_new_len
+            len(self.target_model.tokenizer(target).input_ids) + 2, 100
         )
 
         # Create full prompt for LLM
@@ -88,6 +75,8 @@ class PAIR(Attack):
 
     def __init__(self, logfile, target_model):
         super(PAIR, self).__init__(logfile, target_model)
+
+        import pandas as pd
 
         df = pd.read_pickle(logfile)
         jailbreak_prompts = df["jailbreak_prompt"].to_list()

@@ -1,10 +1,7 @@
 import torch
-import copy
-import random
-import numpy as np
 import time
 
-import smoothllm.lib.perturbations as perturbations
+import smoothllm.perturbations as perturbations
 
 
 class Defense:
@@ -48,7 +45,7 @@ class SmoothLLM(Defense):
         self.perturbation_fn = vars(perturbations)[pert_type](q=pert_pct)
 
     @torch.no_grad()
-    def __call__(self, prompt, batch_size=64, max_new_len=48, stop_eos=True):
+    def __call__(self, prompt, batch_size=64, max_new_len=48):
         t0 = time.perf_counter()
 
         all_inputs = [prompt.full_prompt]
